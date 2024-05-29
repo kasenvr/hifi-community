@@ -1,4 +1,4 @@
 Source: hifi-host-tools
 Version: 0
 Description: Host build system compatible tools for building High Fidelity applications
-Build-Depends: hifi-scribe, glslang, spirv-cross, spirv-tools
+Build-Depends: hifi-scribe, glslang[opt,tools], spirv-cross, spirv-tools
