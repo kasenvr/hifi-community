@@ -1,43 +1,55 @@
-include(vcpkg_common_functions)
-
-vcpkg_check_linkage(ONLY_STATIC_LIBRARY)
-
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO KhronosGroup/SPIRV-Tools
-    REF v2018.5
-    SHA512 068a39e15111f24ad2a6b27e7ada786b3124b239aa8b13e187a4d512044db57a8e6a0fccadd0451155e1f57c96c8dec91a2338996c59fc883007cf7be07f2cad
-    HEAD_REF master
-)
-
-vcpkg_from_github(
-    OUT_SOURCE_PATH SPIRV_HEADERS_PATH
-    REPO KhronosGroup/SPIRV-Headers
-    REF 801cca8104245c07e8cc53292da87ee1b76946fe
-    SHA512 2bfc37beec1f6afb565fa7dad08eb838c8fe4bacda7f80a3a6c75d80c7eb1caea7e7716dc1da11b337b723a0870700d524c6617c5b7cab8b28048fa8c0785ba9
-    HEAD_REF master
+    REF "vulkan-sdk-${VERSION}"
+    SHA512 3ccab3118e0a1d6f20d031cd1f90f2546b618370b90aacc468fc598d523463452f65ed2c89c1de4e2bb8933b9757eb8123363483bcd853e92d41c95ea419e79f
+    PATCHES
+        cmake-config-dir.diff
+        spirv-tools-shared.diff
+        fix-tool-deps.diff
 )
 
 vcpkg_find_acquire_program(PYTHON3)
 get_filename_component(PYTHON3_DIR "${PYTHON3}" DIRECTORY)
 vcpkg_add_to_path("${PYTHON3_DIR}")
 
-vcpkg_configure_cmake(
-    SOURCE_PATH ${SOURCE_PATH}
-    PREFER_NINJA
+vcpkg_cmake_configure(
+    SOURCE_PATH "${SOURCE_PATH}"
     OPTIONS
-        -DSPIRV-Headers_SOURCE_DIR=${SPIRV_HEADERS_PATH}
+        ${FEATURE_OPTIONS}
+        "-DSPIRV-Headers_SOURCE_DIR=${CURRENT_INSTALLED_DIR}"
+        -DSPIRV_SKIP_TESTS=ON
+        -DSPIRV_TOOLS_BUILD_STATIC=ON
         -DSPIRV_WERROR=OFF
+    OPTIONS_DEBUG
 )
 
-vcpkg_install_cmake()
+vcpkg_cmake_install()
+vcpkg_cmake_config_fixup(CONFIG_PATH lib/cmake/SPIRV-Tools PACKAGE_NAME spirv-tools DO_NOT_DELETE_PARENT_CONFIG_PATH)
+vcpkg_cmake_config_fixup(CONFIG_PATH lib/cmake/SPIRV-Tools-link PACKAGE_NAME spirv-tools-link DO_NOT_DELETE_PARENT_CONFIG_PATH)
+vcpkg_cmake_config_fixup(CONFIG_PATH lib/cmake/SPIRV-Tools-lint PACKAGE_NAME spirv-tools-lint DO_NOT_DELETE_PARENT_CONFIG_PATH)
+vcpkg_cmake_config_fixup(CONFIG_PATH lib/cmake/SPIRV-Tools-opt PACKAGE_NAME spirv-tools-opt DO_NOT_DELETE_PARENT_CONFIG_PATH)
+vcpkg_cmake_config_fixup(CONFIG_PATH lib/cmake/SPIRV-Tools-reduce PACKAGE_NAME spirv-tools-reduce) # now delete
+vcpkg_fixup_pkgconfig()
 
-file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/include)
+if("tools" IN_LIST FEATURES)
+    file(MAKE_DIRECTORY "${CURRENT_PACKAGES_DIR}/tools/${PORT}")
+    file(RENAME "${CURRENT_PACKAGES_DIR}/bin/spirv-lesspipe.sh" "${CURRENT_PACKAGES_DIR}/tools/${PORT}/spirv-lesspipe.sh")
+    file(REMOVE "${CURRENT_PACKAGES_DIR}/debug/bin/spirv-lesspipe.sh")
+    set(tools spirv-as spirv-cfg spirv-dis spirv-link spirv-lint spirv-opt spirv-val)
+    if(NOT VCPKG_TARGET_IS_IOS)
+        list(APPEND tools spirv-reduce)
+    endif()
+    vcpkg_copy_tools(TOOL_NAMES ${tools} AUTO_CLEAN)
+endif()
+
+file(REMOVE_RECURSE
+    "${CURRENT_PACKAGES_DIR}/debug/include"
+    "${CURRENT_PACKAGES_DIR}/debug/share"
+)
+
+file(INSTALL "${CMAKE_CURRENT_LIST_DIR}/usage" DESTINATION DESTINATION "${CURRENT_PACKAGES_DIR}/share/${PORT}")
+vcpkg_install_copyright(FILE_LIST "${SOURCE_PATH}/LICENSE")
+
 file(GLOB EXES "${CURRENT_PACKAGES_DIR}/bin/*")
 file(COPY ${EXES} DESTINATION ${CURRENT_PACKAGES_DIR}/tools)
-file(REMOVE ${EXES})
-file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/bin ${CURRENT_PACKAGES_DIR}/debug/bin)
-
-# Handle copyright
-file(COPY ${SOURCE_PATH}/LICENSE DESTINATION ${CURRENT_PACKAGES_DIR}/share/spirv-tools)
-file(RENAME ${CURRENT_PACKAGES_DIR}/share/spirv-tools/LICENSE ${CURRENT_PACKAGES_DIR}/share/spirv-tools/copyright)

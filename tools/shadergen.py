@@ -15,7 +15,7 @@ from threading import Lock
     # # Target dependant Custom rule on the SHADER_FILE
     # if (ANDROID)
     #     set(GLPROFILE LINUX_GL)
-    # else() 
+    # else()
     #     if (APPLE)
     #         set(GLPROFILE MAC_GL)
     #     elseif(UNIX)
@@ -157,7 +157,7 @@ def executeSubprocess(processArgs):
     if (0 != processResult.returncode):
         raise RuntimeError('Call to "{}" failed.\n\narguments:\n{}\n\nstdout:\n{}\n\nstderr:\n{}'.format(
             processArgs[0],
-            ' '.join(processArgs[1:]), 
+            ' '.join(processArgs[1:]),
             processResult.stdout.decode('utf-8'),
             processResult.stderr.decode('utf-8')))
 
@@ -166,8 +166,8 @@ folderMutex = Lock()
 def processCommand(line):
     global args
     global scribeDepCache
-    glslangExec = args.tools_dir + '/glslangValidator'
-    spirvCrossExec = args.tools_dir + '/spirv-cross'
+    glslangExec = args.tools_dir + '/glslang/glslang'
+    spirvCrossExec = args.tools_dir + '/spirv-cross/spirv-cross'
     spirvOptExec = args.tools_dir + '/spirv-opt'
     params = line.split(';')
     dialect = params.pop(0)
@@ -188,12 +188,12 @@ def processCommand(line):
 
     scribeOutputDir = os.path.abspath(os.path.join(unoptGlslFile, os.pardir))
 
-    # Serialize checking and creation of the output directory to avoid occasional 
+    # Serialize checking and creation of the output directory to avoid occasional
     # crashes
     global folderMutex
     folderMutex.acquire()
     if not os.path.exists(scribeOutputDir):
-        os.makedirs(scribeOutputDir) 
+        os.makedirs(scribeOutputDir)
     folderMutex.release()
 
     scribeDeps = scribeDepCache.getOrGen(scribeFile, libs, dialect, variant, defines)
@@ -217,7 +217,7 @@ def processCommand(line):
         executeSubprocess(scribeArgs)
 
         # Generate the un-optimized output
-        executeSubprocess([glslangExec, '-V110', '-o', upoptSpirvFile, unoptGlslFile])
+        executeSubprocess([glslangExec, '-V100', '-o', upoptSpirvFile, unoptGlslFile])
 
         # Optimize the SPIRV
         executeSubprocess([spirvOptExec, '-O', '-o', spirvFile, upoptSpirvFile])
@@ -233,7 +233,7 @@ def processCommand(line):
         if (dialect == '410'): spirvCrossArgs.append('--no-420pack-extension')
         executeSubprocess(spirvCrossArgs)
     else:
-        # This logic is necessary because cmake will agressively keep re-executing the shadergen 
+        # This logic is necessary because cmake will agressively keep re-executing the shadergen
         # code otherwise
         Path(unoptGlslFile).touch()
         Path(upoptSpirvFile).touch()

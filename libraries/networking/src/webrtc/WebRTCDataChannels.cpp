@@ -11,8 +11,10 @@
 
 #if defined(WEBRTC_DATA_CHANNELS)
 
+#include <QProcessEnvironment>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonArray>
 
 #include "../NetworkLogging.h"
 
@@ -29,19 +31,23 @@ const std::list<std::string> DEFAULT_ICE_SERVER_URLS = {
 };
 const int MAX_WEBRTC_BUFFER_SIZE = 16777216;  // 16MB
 
-// #define WEBRTC_DEBUG
+#define WEBRTC_DEBUG_LEVEL_NONE 0 // default value if left undefined
+#define WEBRTC_DEBUG_LEVEL_NORMAL 1 // basic peer connection logs
+#define WEBRTC_DEBUG_LEVEL_VERBOSE 2 // full data channel logs
+
+// #define WEBRTC_DEBUG WEBRTC_DEBUG_LEVEL_NORMAL
 
 using namespace webrtc;
 
 
 void WDCSetSessionDescriptionObserver::OnSuccess() {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
     qCDebug(networking_webrtc) << "WDCSetSessionDescriptionObserver::OnSuccess()";
 #endif
 }
 
 void WDCSetSessionDescriptionObserver::OnFailure(RTCError error) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
     qCDebug(networking_webrtc) << "WDCSetSessionDescriptionObserver::OnFailure() :" << error.message();
 #endif
 }
@@ -52,7 +58,7 @@ void WDCSetSessionDescriptionObserver::OnFailure(RTCError error) {
 #ifdef API_SET_LOCAL_DESCRIPTION_OBSERVER_INTERFACE_H_
 
 void WDCSetLocalDescriptionObserver::OnSetLocalDescriptionComplete(webrtc::RTCError error) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
     if(error.ok()) {
         qCDebug(networking_webrtc) << "SetLocalDescription call succeeded";
     } else {
@@ -62,7 +68,7 @@ void WDCSetLocalDescriptionObserver::OnSetLocalDescriptionComplete(webrtc::RTCEr
 }
 
 void WDCSetRemoteDescriptionObserver::OnSetRemoteDescriptionComplete(webrtc::RTCError error) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
     if(error.ok()) {
         qCDebug(networking_webrtc) << "SetRemoteDescription call succeeded";
     } else {
@@ -78,7 +84,7 @@ WDCCreateSessionDescriptionObserver::WDCCreateSessionDescriptionObserver(WDCConn
 { }
 
 void WDCCreateSessionDescriptionObserver::OnSuccess(SessionDescriptionInterface* descriptionRaw) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
     qCDebug(networking_webrtc) << "WDCCreateSessionDescriptionObserver::OnSuccess()";
 #endif
     // NOTE: according to documentation in the relevant webrtc header,
@@ -93,7 +99,7 @@ void WDCCreateSessionDescriptionObserver::OnSuccess(SessionDescriptionInterface*
 }
 
 void WDCCreateSessionDescriptionObserver::OnFailure(RTCError error) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
     qCDebug(networking_webrtc) << "WDCCreateSessionDescriptionObserver::OnFailure() :" << error.message();
 #endif
 }
@@ -104,7 +110,7 @@ WDCPeerConnectionObserver::WDCPeerConnectionObserver(WDCConnection* parent) :
 { }
 
 void WDCPeerConnectionObserver::OnSignalingChange(PeerConnectionInterface::SignalingState newState) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     QStringList states {
         "Stable",
         "HaveLocalOffer",
@@ -118,13 +124,13 @@ void WDCPeerConnectionObserver::OnSignalingChange(PeerConnectionInterface::Signa
 }
 
 void WDCPeerConnectionObserver::OnRenegotiationNeeded() {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
     qCDebug(networking_webrtc) << "WDCPeerConnectionObserver::OnRenegotiationNeeded()";
 #endif
 }
 
 void WDCPeerConnectionObserver::OnIceGatheringChange(PeerConnectionInterface::IceGatheringState newState) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     QStringList states {
         "New",
         "Gathering",
@@ -135,14 +141,14 @@ void WDCPeerConnectionObserver::OnIceGatheringChange(PeerConnectionInterface::Ic
 }
 
 void WDCPeerConnectionObserver::OnIceCandidate(const IceCandidateInterface* candidate) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     qCDebug(networking_webrtc) << "WDCPeerConnectionObserver::OnIceCandidate()";
 #endif
     _parent->sendIceCandidate(candidate);
 }
 
 void WDCPeerConnectionObserver::OnIceConnectionChange(PeerConnectionInterface::IceConnectionState newState) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     QStringList states {
         "New",
         "Checking",
@@ -158,7 +164,7 @@ void WDCPeerConnectionObserver::OnIceConnectionChange(PeerConnectionInterface::I
 }
 
 void WDCPeerConnectionObserver::OnStandardizedIceConnectionChange(PeerConnectionInterface::IceConnectionState newState) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     QStringList states {
         "New",
         "Checking",
@@ -175,14 +181,14 @@ void WDCPeerConnectionObserver::OnStandardizedIceConnectionChange(PeerConnection
 }
 
 void WDCPeerConnectionObserver::OnDataChannel(rtc::scoped_refptr<DataChannelInterface> dataChannel) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     qCDebug(networking_webrtc) << "WDCPeerConnectionObserver::OnDataChannel()";
 #endif
     _parent->onDataChannelOpened(dataChannel);
 }
 
 void WDCPeerConnectionObserver::OnConnectionChange(PeerConnectionInterface::PeerConnectionState newState) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     QStringList states {
         "New",
         "Connecting",
@@ -203,14 +209,14 @@ WDCDataChannelObserver::WDCDataChannelObserver(WDCConnection* parent) :
 { }
 
 void WDCDataChannelObserver::OnStateChange() {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     qCDebug(networking_webrtc) << "WDCDataChannelObserver::OnStateChange()";
 #endif
     _parent->onDataChannelStateChanged();
 }
 
 void WDCDataChannelObserver::OnMessage(const DataBuffer& buffer) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
     qCDebug(networking_webrtc) << "WDCDataChannelObserver::OnMessage()";
 #endif
     _parent->onDataChannelMessageReceived(buffer);
@@ -222,7 +228,7 @@ WDCConnection::WDCConnection(WebRTCDataChannels* parent, const QString& dataChan
     _dataChannelID(dataChannelID),
     _peerConnection()
 {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     qCDebug(networking_webrtc) << "WDCConnection::WDCConnection() :" << dataChannelID;
 #endif
 
@@ -238,7 +244,7 @@ WDCConnection::WDCConnection(WebRTCDataChannels* parent, const QString& dataChan
 };
 
 void WDCConnection::setRemoteDescription(QJsonObject& description) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
     qCDebug(networking_webrtc) << "WDCConnection::setRemoteDescription() :" << description;
 #endif
 
@@ -259,7 +265,7 @@ void WDCConnection::setRemoteDescription(QJsonObject& description) {
         return;
     }
 
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
     qCDebug(networking_webrtc) << "3. Set remote description:" << sessionDescription.get();
 #endif
     if (_peerConnection) {
@@ -274,7 +280,7 @@ void WDCConnection::setRemoteDescription(QJsonObject& description) {
 }
 
 void WDCConnection::createAnswer() {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
     qCDebug(networking_webrtc) << "WDCConnection::createAnswer()";
     qCDebug(networking_webrtc) << "4.a Create answer";
 #endif
@@ -284,7 +290,7 @@ void WDCConnection::createAnswer() {
 }
 
 void WDCConnection::sendAnswer(std::string descriptionString) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
     qCDebug(networking_webrtc) << "WDCConnection::sendAnswer()";
     qCDebug(networking_webrtc) << "4.b Send answer to the remote peer";
 #endif
@@ -305,7 +311,7 @@ void WDCConnection::sendAnswer(std::string descriptionString) {
 }
 
 void WDCConnection::setLocalDescription(std::unique_ptr<SessionDescriptionInterface> description) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
     qCDebug(networking_webrtc) << "WDCConnection::setLocalDescription()";
     qCDebug(networking_webrtc) << "5. Set local description";
 #endif
@@ -321,7 +327,7 @@ void WDCConnection::setLocalDescription(std::unique_ptr<SessionDescriptionInterf
 }
 
 void WDCConnection::addIceCandidate(QJsonObject& data) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
     qCDebug(networking_webrtc) << "WDCConnection::addIceCandidate()";
 #endif
 
@@ -337,7 +343,7 @@ void WDCConnection::addIceCandidate(QJsonObject& data) {
         return;
     }
 
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
     qCDebug(networking_webrtc) << "6. Add ICE candidate";
 #endif
     if (_peerConnection) {
@@ -346,7 +352,7 @@ void WDCConnection::addIceCandidate(QJsonObject& data) {
 }
 
 void WDCConnection::sendIceCandidate(const IceCandidateInterface* candidate) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
     qCDebug(networking_webrtc) << "WDCConnection::sendIceCandidate()";
 #endif
 
@@ -366,14 +372,14 @@ void WDCConnection::sendIceCandidate(const IceCandidateInterface* candidate) {
     jsonObject.insert("data", jsonWebRTCData);
     QJsonDocument jsonDocument = QJsonDocument(jsonObject);
 
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
     qCDebug(networking_webrtc) << "7. Send ICE candidate to the remote peer";
 #endif
     _parent->sendSignalingMessage(jsonObject);
 }
 
 void WDCConnection::onPeerConnectionStateChanged(PeerConnectionInterface::PeerConnectionState state) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     QStringList states {
         "New",
         "Connecting",
@@ -387,7 +393,7 @@ void WDCConnection::onPeerConnectionStateChanged(PeerConnectionInterface::PeerCo
 }
 
 void WDCConnection::onDataChannelOpened(rtc::scoped_refptr<DataChannelInterface> dataChannel) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     qCDebug(networking_webrtc) << "WDCConnection::onDataChannelOpened() :"
         << dataChannel->id()
         << QString::fromStdString(dataChannel->label())
@@ -402,7 +408,7 @@ void WDCConnection::onDataChannelOpened(rtc::scoped_refptr<DataChannelInterface>
     _dataChannel = dataChannel;
     _dataChannel->RegisterObserver(_dataChannelObserver.get());
 
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     qCDebug(networking_webrtc) << "WDCConnection::onDataChannelOpened() : channel ID:" << _dataChannelID;
 #endif
     _parent->onDataChannelOpened(this, _dataChannelID);
@@ -410,7 +416,7 @@ void WDCConnection::onDataChannelOpened(rtc::scoped_refptr<DataChannelInterface>
 
 void WDCConnection::onDataChannelStateChanged() {
     auto state = _dataChannel->state();
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     qCDebug(networking_webrtc) << "WDCConnection::onDataChannelStateChanged() :" << (int)state
         << DataChannelInterface::DataStateString(state);
 #endif
@@ -426,7 +432,7 @@ void WDCConnection::onDataChannelStateChanged() {
 }
 
 void WDCConnection::onDataChannelMessageReceived(const DataBuffer& buffer) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
     qCDebug(networking_webrtc) << "WDCConnection::onDataChannelMessageReceived()";
 #endif
 
@@ -434,7 +440,7 @@ void WDCConnection::onDataChannelMessageReceived(const DataBuffer& buffer) {
 
     // Echo message back to sender.
     if (byteArray.startsWith("echo:")) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
     qCDebug(networking_webrtc) << "Echo message back";
 #endif
         auto addressParts = _dataChannelID.split(":");
@@ -451,7 +457,7 @@ void WDCConnection::onDataChannelMessageReceived(const DataBuffer& buffer) {
 }
 
 qint64 WDCConnection::getBufferedAmount() const {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
     qCDebug(networking_webrtc) << "WDCConnection::getBufferedAmount()";
 #endif
     return _dataChannel && _dataChannel->state() != DataChannelInterface::kClosing
@@ -460,7 +466,7 @@ qint64 WDCConnection::getBufferedAmount() const {
 }
 
 bool WDCConnection::sendDataMessage(const DataBuffer& buffer) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
     qCDebug(networking_webrtc) << "WDCConnection::sendDataMessage()";
     if (!_dataChannel || _dataChannel->state() == DataChannelInterface::kClosing
         || _dataChannel->state() == DataChannelInterface::kClosed) {
@@ -480,7 +486,7 @@ bool WDCConnection::sendDataMessage(const DataBuffer& buffer) {
 }
 
 void WDCConnection::closePeerConnection() {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     if (_peerConnection) {
         qCDebug(networking_webrtc) << "WDCConnection::closePeerConnection() :" << (int)_peerConnection->peer_connection_state();
     }
@@ -490,7 +496,7 @@ void WDCConnection::closePeerConnection() {
     }
     // Don't set _peerConnection = nullptr because it is a scoped_refptr.
     _peerConnectionObserver = nullptr;
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     qCDebug(networking_webrtc) << "Disposed of peer connection";
 #endif
 }
@@ -500,12 +506,12 @@ WebRTCDataChannels::WebRTCDataChannels(QObject* parent) :
     QObject(parent),
     _parent(parent)
 {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     qCDebug(networking_webrtc) << "WebRTCDataChannels::WebRTCDataChannels()";
 #endif
 
     // Create a peer connection factory.
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     // Numbers are per WebRTC's peer_connection_interface.h.
     qCDebug(networking_webrtc) << "1. Create a new PeerConnectionFactoryInterface";
 #endif
@@ -529,7 +535,7 @@ WebRTCDataChannels::WebRTCDataChannels(QObject* parent) :
 }
 
 WebRTCDataChannels::~WebRTCDataChannels() {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     qCDebug(networking_webrtc) << "WebRTCDataChannels::~WebRTCDataChannels()";
 #endif
     reset();
@@ -543,7 +549,7 @@ WebRTCDataChannels::~WebRTCDataChannels() {
 }
 
 void WebRTCDataChannels::reset() {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     qCDebug(networking_webrtc) << "WebRTCDataChannels::reset() :" << _connectionsByID.count();
 #endif
     QHashIterator<QString, WDCConnection*> i(_connectionsByID);
@@ -555,14 +561,14 @@ void WebRTCDataChannels::reset() {
 }
 
 void WebRTCDataChannels::onDataChannelOpened(WDCConnection* connection, const QString& dataChannelID) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     qCDebug(networking_webrtc) << "WebRTCDataChannels::onDataChannelOpened() :" << dataChannelID;
 #endif
     _connectionsByID.insert(dataChannelID, connection);
 }
 
 void WebRTCDataChannels::onSignalingMessage(const QJsonObject& message) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     qCDebug(networking_webrtc) << "WebRTCDataChannel::onSignalingMessage()" << message;
 #endif
 
@@ -612,14 +618,14 @@ void WebRTCDataChannels::onSignalingMessage(const QJsonObject& message) {
 }
 
 void WebRTCDataChannels::sendSignalingMessage(const QJsonObject& message) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     qCDebug(networking_webrtc) << "WebRTCDataChannels::sendSignalingMessage() :" << QJsonDocument(message).toJson(QJsonDocument::Compact);
 #endif
     emit signalingMessage(message);
 }
 
 void WebRTCDataChannels::emitDataMessage(const QString& dataChannelID, const QByteArray& byteArray) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
     qCDebug(networking_webrtc) << "WebRTCDataChannels::emitDataMessage() :" << dataChannelID << byteArray.toHex()
         << byteArray.length();
 #endif
@@ -634,7 +640,7 @@ void WebRTCDataChannels::emitDataMessage(const QString& dataChannelID, const QBy
 
 bool WebRTCDataChannels::sendDataMessage(const SockAddr& destination, const QByteArray& byteArray) {
     auto dataChannelID = destination.toShortString();
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
     qCDebug(networking_webrtc) << "WebRTCDataChannels::sendDataMessage() :" << dataChannelID;
 #endif
 
@@ -651,7 +657,7 @@ bool WebRTCDataChannels::sendDataMessage(const SockAddr& destination, const QByt
 qint64 WebRTCDataChannels::getBufferedAmount(const SockAddr& address) const {
     auto dataChannelID = address.toShortString();
     if (!_connectionsByID.contains(dataChannelID)) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_VERBOSE
         qCDebug(networking_webrtc) << "WebRTCDataChannels::getBufferedAmount() : Channel doesn't exist:" << dataChannelID;
 #endif
         return 0;
@@ -662,21 +668,73 @@ qint64 WebRTCDataChannels::getBufferedAmount(const SockAddr& address) const {
 
 rtc::scoped_refptr<PeerConnectionInterface> WebRTCDataChannels::createPeerConnection(
         const std::shared_ptr<WDCPeerConnectionObserver> peerConnectionObserver) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     qCDebug(networking_webrtc) << "WebRTCDataChannels::createPeerConnection()";
 #endif
 
     PeerConnectionInterface::RTCConfiguration configuration;
-    configuration.servers = _iceServers;
-    if (configuration.servers.empty()) {
-        for (const auto& url : DEFAULT_ICE_SERVER_URLS) {
-            PeerConnectionInterface::IceServer iceServer;
-            iceServer.urls = std::vector<std::string>{url};
-            configuration.servers.push_back(iceServer);
+
+    const QString WEBRTC_ICE_SERVERS_OVERRIDE_ENV = "VRCA_OVERRIDE_WEBRTC_ICE_SERVERS";
+    if (QProcessEnvironment::systemEnvironment().contains(WEBRTC_ICE_SERVERS_OVERRIDE_ENV)) {
+        auto envString = QProcessEnvironment::systemEnvironment().value(WEBRTC_ICE_SERVERS_OVERRIDE_ENV).toUtf8();
+        auto json = QJsonDocument::fromJson(envString);
+        if (json.isArray()) {
+            auto array = json.array();
+            for (auto&& server : array) {
+                PeerConnectionInterface::IceServer iceServer;
+                if (server.isObject() && server.toObject().contains("urls")) {
+                    auto urls = server.toObject()["urls"];
+                    if (urls.isArray()) {
+                        for (auto&& url : urls.toArray()) {
+                            iceServer.urls.push_back(url.toString().toStdString());
+                        }
+                    } else {
+                        iceServer.urls.push_back(urls.toString().toStdString());
+                    }
+                    auto password = server.toObject()["credential"].toString().toStdString();
+                    auto username = server.toObject()["username"].toString().toStdString();
+                    if (password != "") {
+                        iceServer.password = password;
+                    }
+                    if (username != "") {
+                        iceServer.username = username;
+                    }
+                    configuration.servers.push_back(iceServer);
+                } else {
+                    qCDebug(networking_webrtc) << "WebRTCDataChannels::createPeerConnection() : " << WEBRTC_ICE_SERVERS_OVERRIDE_ENV << " environment variable invalid";
+                    qCDebug(networking_webrtc) << envString;
+                    break;
+                }
+            }
+        } else {
+            qCDebug(networking_webrtc) << "WebRTCDataChannels::createPeerConnection() : " << WEBRTC_ICE_SERVERS_OVERRIDE_ENV << " environment variable is not a JSON array";
+            qCDebug(networking_webrtc) << envString;
+        }
+    } else {
+        configuration.servers = _iceServers;
+        if (configuration.servers.empty()) {
+            for (const auto& url : DEFAULT_ICE_SERVER_URLS) {
+                PeerConnectionInterface::IceServer iceServer;
+                iceServer.urls = std::vector<std::string>{url};
+                configuration.servers.push_back(iceServer);
+            }
         }
     }
 
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
+    qCDebug(networking_webrtc) << "WebRTCDataChannels::createPeerConnection() : Configuration ICE server list:";
+        for (const auto& server : configuration.servers) {
+            qCDebug(networking_webrtc) << "URL: " << (server.urls.size() > 0 ? server.urls.front().c_str() : "");
+            if (server.username != "") {
+                qCDebug(networking_webrtc) << "USERNAME: " << server.username.c_str();
+            }
+            if (server.password != "") {
+                qCDebug(networking_webrtc) << "PASSWORD: " << server.password.c_str();
+            }
+        }
+#endif
+
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     qCDebug(networking_webrtc) << "2. Create a new peer connection";
 #endif
     PeerConnectionDependencies dependencies(peerConnectionObserver.get());
@@ -686,7 +744,7 @@ rtc::scoped_refptr<PeerConnectionInterface> WebRTCDataChannels::createPeerConnec
 #ifdef API_SET_LOCAL_DESCRIPTION_OBSERVER_INTERFACE_H_
     auto result = _peerConnectionFactory->CreatePeerConnectionOrError(configuration, std::move(dependencies));
     if (result.ok()) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
         qCDebug(networking_webrtc) << "Created peer connection";
 #endif
         return result.MoveValue();
@@ -696,7 +754,7 @@ rtc::scoped_refptr<PeerConnectionInterface> WebRTCDataChannels::createPeerConnec
     }
 #else
     auto result = _peerConnectionFactory->CreatePeerConnection(configuration, std::move(dependencies));
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     qCDebug(networking_webrtc) << "Created peer connection";
 #endif
     return result;
@@ -706,7 +764,7 @@ rtc::scoped_refptr<PeerConnectionInterface> WebRTCDataChannels::createPeerConnec
 
 
 void WebRTCDataChannels::closePeerConnection(WDCConnection* connection) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     qCDebug(networking_webrtc) << "WebRTCDataChannels::closePeerConnection()";
 #endif
     // Use Qt's signals/slots mechanism to close the peer connection on its own call stack, separate from the DataChannel
@@ -717,19 +775,19 @@ void WebRTCDataChannels::closePeerConnection(WDCConnection* connection) {
 
 
 void WebRTCDataChannels::closePeerConnectionNow(WDCConnection* connection) {
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     qCDebug(networking_webrtc) << "WebRTCDataChannels::closePeerConnectionNow()";
 #endif
     // Close the peer connection.
     connection->closePeerConnection();
 
     // Delete the WDCConnection.
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     qCDebug(networking_webrtc) << "Dispose of connection for channel:" << connection->getDataChannelID();
 #endif
     _connectionsByID.remove(connection->getDataChannelID());
     delete connection;
-#ifdef WEBRTC_DEBUG
+#if WEBRTC_DEBUG >= WEBRTC_DEBUG_LEVEL_NORMAL
     qCDebug(networking_webrtc) << "Disposed of connection";
 #endif
 }
