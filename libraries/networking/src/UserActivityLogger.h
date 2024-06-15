@@ -36,7 +36,7 @@ public slots:
     bool isDisabledSettingSet() const { return _disabled.isSet(); }
 
     bool isCrashMonitorEnabled() { return !_crashMonitorDisabled.get(); }
-    bool isCrashMonitorDisabledSettingSet() const { return _crashMonitorDisabled.isSet(); }
+    bool isCrashMonitorDisabledSettingSet() const { return _crashMonitorDisabled.isSet(); }	// Is this actually used?
 
     void disable(bool disable);
     void crashMonitorDisable(bool disable);

@@ -382,7 +382,9 @@ public:
 
 class CheckPreference : public BoolPreference {
     Q_OBJECT
+    //Q_PROPERTY(bool enabled READ getEnabled CONSTANT)
     Q_PROPERTY(bool indented READ getIndented CONSTANT)
+    Q_PROPERTY(QString functionalityDisabledTooltip READ getFunctionalityDisabledTooltip CONSTANT)
 public:
     using Getter = std::function<bool()>;
     using Setter = std::function<void(const bool&)>;
@@ -391,10 +393,21 @@ public:
         : BoolPreference(category, name, getter, setter) { }
     Type getType() override { return Checkbox; }
 
+    //bool getEnabled() { return _isEnabled; }
+    //void setEnabled(const bool enabled) { _isEnabled = enabled; }
+
     bool getIndented() { return _isIndented; }
     void setIndented(const bool indented) { _isIndented = indented; }
+
+    //const QString& getTooltip() { return _tooltip; }
+    //void setTooltip(const QString tooltip) { _tooltip = tooltip; }
+
+    const QString& getFunctionalityDisabledTooltip() { return _functionalityDisabledTooltip; }
+    void setFunctionalityDisabledTooltip(const QString functionalityDisabledTooltip) { _functionalityDisabledTooltip = functionalityDisabledTooltip; }
 protected:
+    //bool _isEnabled { true };
     bool _isIndented { false };
+    QString _functionalityDisabledTooltip;
 };
 
 class PrimaryHandPreference : public StringPreference {

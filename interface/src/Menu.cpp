@@ -640,12 +640,18 @@ Menu::Menu() {
         true,
         &UserActivityLogger::getInstance(),
         SLOT(disable(bool)));
-    addCheckableActionToQMenuAndActionHash(networkMenu,
-        MenuOption::DisableCrashLogger,
-        0,
-        true,
-        &UserActivityLogger::getInstance(),
-        SLOT(crashMonitorDisable(bool)));
+    {
+        auto ual = &UserActivityLogger::getInstance();
+        addCheckableActionToQMenuAndActionHash(networkMenu,
+            MenuOption::GenerateAndSubmitCrashReports,
+            0,
+            true,
+            ual,
+            SLOT(crashMonitorDisable(bool)),
+            UNSPECIFIED_POSITION,
+            QString(),
+            ual->isCrashMonitorEnabled());
+    }
     addActionToQMenuAndActionHash(networkMenu, MenuOption::ShowDSConnectTable, 0,
         qApp, SLOT(loadDomainConnectionDialog()));
 

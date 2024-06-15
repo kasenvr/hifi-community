@@ -91,7 +91,6 @@ namespace MenuOption {
     const QString DeleteAvatarEntitiesBookmark = "Delete Avatar Entities Bookmark";
     const QString DeleteBookmark = "Delete Bookmark...";
     const QString DisableActivityLogger = "Disable Activity Logger";
-    const QString DisableCrashLogger = "Disable Crash Reporter";
     const QString DisableEyelidAdjustment = "Disable Eyelid Adjustment";
     const QString DisableLightEntities = "Disable Light Entities";
     const QString DisplayCrashOptions = "Display Crash Options";
@@ -124,6 +123,7 @@ namespace MenuOption {
     const QString FixGaze = "Fix Gaze (no saccade)";
     const QString Forward = "Forward";
     const QString FrameTimer = "Show Timer";
+    const QString GenerateAndSubmitCrashReports = "Generate and Submit Crash Reports";
     const QString Help = "Help...";
     const QString HomeLocation = "Home ";
     const QString IncreaseAvatarSize = "Increase Avatar Size";

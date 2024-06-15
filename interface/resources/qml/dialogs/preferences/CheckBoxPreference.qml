@@ -18,10 +18,13 @@ Preference {
     height: spacer.height + Math.max(hifi.dimensions.controlLineHeight, checkBox.implicitHeight)
     property bool value: false
     Component.onCompleted: {
+        //checkBox.enabled = preference.enabled;
         checkBox.checked = preference.value;
+        checkBox.isFeatureDisabled = preference.functionalityDisabledTooltip;
+        checkBox.featureDisabledToolTip = preference.tooltip;
         value = checkBox.checked;
         preference.value = Qt.binding(function(){ return checkBox.checked; });
-        value = checkBox.checked;
+        value = checkBox.checked;	// Why is this here twice?
     }
 
     function save() {

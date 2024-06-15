@@ -208,12 +208,14 @@ QAction* Menu::addCheckableActionToQMenuAndActionHash(MenuWrapper* destinationMe
                                                       const QObject* receiver,
                                                       const char* member,
                                                       int menuItemLocation,
-                                                      const QString& grouping) {
+                                                      const QString& grouping,
+                                                      const bool functionalityEnabled) {
 
     QAction* action = addActionToQMenuAndActionHash(destinationMenu, actionName, shortcut, receiver, member,
                                                         QAction::NoRole, menuItemLocation);
     action->setCheckable(true);
     action->setChecked(checked);
+    action->setDisabled(!functionalityEnabled);
 
     if (isValidGrouping(grouping)) {
         _groupingActions[grouping] << action;
@@ -229,7 +231,8 @@ QAction* Menu::addCheckableActionToQMenuAndActionHash(MenuWrapper* destinationMe
                                                     const QKeySequence& shortcut,
                                                     const bool checked,
                                                     int menuItemLocation,
-                                                    const QString& grouping) { 
+                                                    const QString& grouping) {
+
     auto action = addCheckableActionToQMenuAndActionHash(destinationMenu, actionName, shortcut, checked, nullptr, nullptr, menuItemLocation, grouping);
     connect(action, &QAction::triggered, handler);
     return action;
